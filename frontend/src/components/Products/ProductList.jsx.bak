@@ -1,0 +1,68 @@
+import { useState, useEffect, useCallback } from "react";
+import API from "../../services/api";
+import ProductCard from "./ProductCard";
+import ProductFilters from "./ProductFilters";
+
+const ProductList = () => {
+  const [products, setProducts] = useState([]);
+  const [filters, setFilters] = useState({
+    category: "",
+    minPrice: "",
+    maxPrice: "",
+    sort: "price_asc",
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const params = {};
+
+      if (filters.category) params.category = filters.category;
+      if (filters.minPrice) params.minPrice = parseFloat(filters.minPrice);
+      if (filters.maxPrice) params.maxPrice = parseFloat(filters.maxPrice);
+      if (filters.sort) params.sort = filters.sort;
+
+      const { data } = await API.get("/products", { params });
+      setProducts(data);
+    } catch (error) {
+      setError("Failed to fetch products. Please try again later.");
+      console.error("Error fetching products:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, [filters, fetchProducts]);
+
+  if (loading) {
+    return <div className="text-center py-8">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-8 text-red-600">{error}</div>;
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex gap-8">
+        <aside className="w-1/4">
+          <ProductFilters filters={filters} setFilters={setFilters} />
+        </aside>
+        <main className="w-3/4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {products.map((product) => (
+              <ProductCard key={product._id} product={product} />
+            ))}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default ProductList;
