@@ -12,13 +12,38 @@ exports.createProduct = async (req, res) => {
 
 exports.getProducts = async (req, res) => {
   try {
-    const { category, minPrice, maxPrice } = req.query;
+    const { category, minPrice, maxPrice, sort } = req.query;
     let filter = {};
     if (category) filter.category = category;
     if (minPrice || maxPrice) filter.price = {};
     if (minPrice) filter.price.$gte = Number(minPrice);
     if (maxPrice) filter.price.$lte = Number(maxPrice);
-    const products = await Product.find(filter);
+
+    let query = Product.find(filter);
+
+    // Handle sorting
+    if (sort) {
+      switch (sort) {
+        case "price_asc":
+          query = query.sort({ price: 1 });
+          break;
+        case "price_desc":
+          query = query.sort({ price: -1 });
+          break;
+        case "name_asc":
+          query = query.sort({ name: 1 });
+          break;
+        case "name_desc":
+          query = query.sort({ name: -1 });
+          break;
+        default:
+          query = query.sort({ price: 1 });
+      }
+    } else {
+      query = query.sort({ price: 1 }); // default sort
+    }
+
+    const products = await query;
     res.json(products);
   } catch (err) {
     res.status(500).json({ message: err.message });
